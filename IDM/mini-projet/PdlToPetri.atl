@@ -1,0 +1,138 @@
+-- @path SimplePDL=/fr.n7.simplepdl/SimplePDL.ecore
+-- @path PetriNet=/fr.n7.PetriNet/PetriNet.ecore
+
+
+module PdlToPetri;
+create OUT : PetriNet from IN : SimplePDL;
+
+
+
+-- Obtenir le processus qui contient ce process element.
+-- Remarque: Ce helper ne serait pas utile si une référence opposite
+-- avait été placée entre Process et ProcessElement
+
+-- Traduire un Process en un PetriNet de même nom
+rule Process2PetriNet {
+	from p: SimplePDL!Process
+	to pn: PetriNet!PetriNet (name <- p.name)
+}
+
+
+-- Traduire une WorkDefinition en un motif sur le réseau de Petri
+rule WorkDefinition2PetriNet {
+	from wd: SimplePDL!WorkDefinition
+	to
+		-- PLACES d'une WorkDefinition
+		p_idle: PetriNet!Place(
+			name <- wd.name + '_idle',
+			jetons <- 1
+		)	,
+				
+		p_running: PetriNet!Place(
+            name <- wd.name + '_running',
+            jetons <- 0),
+            
+        
+        p_finished: PetriNet!Place(
+            name <- wd.name + '_finished',
+            jetons <- 0),
+           
+            
+        p_started: PetriNet!Place(
+            name <- wd.name + '_started',
+            jetons <- 0),
+            
+			
+        t_start: PetriNet!Transition(
+            name <- wd.name + '_start'),
+            
+            
+        t_finish: PetriNet!Transition(
+            name <- wd.name + '_finish'
+            
+		),
+        
+        e_idle_start: PetriNet!Arc(
+            source <- p_idle,
+            cible <- t_start,
+            poids <- 1,
+            kind <- #normal
+            ),
+        
+        e_start_started: PetriNet!Arc(
+            source <- t_start,
+            cible <- p_started,
+            poids <- 1,
+            kind <- #normal
+            ),
+        
+        e_start_running: PetriNet!Arc(
+            source <- t_start,
+            cible <- p_running,
+            poids <- 1,
+            kind <- #normal
+            ),
+        
+        e_running_finish: PetriNet!Arc(
+            source <- p_running,
+            cible <- t_finish,
+            poids <- 1,
+            kind <- #normal
+            ),
+        
+        e_finish_finished: PetriNet!Arc(
+            source <- t_finish,
+            cible <- p_finished,
+            poids <- 1,
+            kind <- #normal)
+}
+
+-- Traduire une WorkSequence
+rule WorkSequence2PetriNet {
+    from workSequence: SimplePDL!WorkSequence  
+    to
+        e_first_second: PetriNet!Arc(
+            source <-   if (workSequence.linkType = #startToFinish or workSequence.linkType = #startToStart) then
+                            thisModule.resolveTemp(workSequence.predecessor, 'p_started')
+                        else
+                              thisModule.resolveTemp(workSequence.predecessor, 'p_finished')
+                        endif,
+            cible <-        if (workSequence.linkType = #startToStart or workSequence.linkType = #finishToStart) then
+                            thisModule.resolveTemp(workSequence.successor, 't_start')
+                        else
+                            thisModule.resolveTemp(workSequence.successor, 't_finish')
+                        endif,
+            poids <- 1,
+            kind <- #read_arc
+			)
+}
+
+-- Traduire une Ressource
+rule Ressource2PetriNet {
+	from ressource: SimplePDL!Ressource	
+	to
+		p_ressource: PetriNet!Place(
+			name <- ressource.name,
+			jetons <- ressource.quantity
+			)
+}
+
+
+rule NeedRessource2PetriNet {
+	from allocate: SimplePDL!NeedRessource
+	to
+		e_take_ressource: PetriNet!Arc(
+			source <- allocate.ressource,
+			cible <- thisModule.resolveTemp(allocate.utilisateur, 't_start'),
+			poids <- allocate.need,
+			kind <- #normal
+			
+		),
+			
+		e_release_ressource: PetriNet!Arc(
+			source <- allocate.ressource,
+			cible <- thisModule.resolveTemp(allocate.utilisateur, 't_finish'),
+			poids <- allocate.need,
+			kind <- #normal
+		)
+}

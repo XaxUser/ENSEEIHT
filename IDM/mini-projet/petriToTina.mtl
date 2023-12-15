@@ -1,0 +1,51 @@
+[comment encoding = UTF-8 /]
+[module totina('http://petrinet')]
+
+[template public petriToTina(aPetri : PetriNet)]
+[comment @main/]
+[file (aPetri.name + '.net', false, 'UTF-8')]
+net [aPetri.name/]
+[let plc : OrderedSet(Place) = aPetri.getPlaces() ] 
+	[if (plc->size() > 0)]
+		[for (pl : Place | plc)]
+pl [pl.name/] ([pl.jetons/])
+		[/for]
+	[/if]
+[/let]
+[let trs : OrderedSet(Transition) = aPetri.getTransitions() ] 
+    [if (trs->size() > 0)]
+		[for (tr : Transition | trs)]
+tr [tr.name/] [let arcs : OrderedSet(Arc) = aPetri.getArcs() ]
+[if (arcs->size() > 0)]
+[for (arc : Arc | arcs)]
+[if (arc.cible = tr)]
+ [arc.source.name/][if (arc.kind = ArcEnum::read_arc)]?[arc.poids/][/if][if (arc.kind = ArcEnum::normal) and (arc.poids >= 2)]*[arc.poids/][/if][/if][/for] 
+ -> [for (arc : Arc | arcs)][if (arc.source = tr)] [arc.cible.name/][if (arc.kind = ArcEnum::read_arc)]?[arc.poids/][/if][if (arc.kind = ArcEnum::normal) and (arc.poids >= 2)]*[arc.poids/][/if][/if][/for]
+[/if]
+[/let]
+[/for]
+[/if]
+[/let]
+
+
+[/file]
+[/template]
+
+[query public getPlaces(p: PetriNet) : OrderedSet(Place) = 
+	p.petElements->select( e | e.oclIsTypeOf(Place) )
+		->collect( e | e.oclAsType(Place) )
+		->asOrderedSet()
+/]
+
+[query public getTransitions(p: PetriNet) : OrderedSet(Transition) = 
+	p.petElements->select( e | e.oclIsTypeOf(Transition) )
+		->collect( e | e.oclAsType(Transition) )
+		->asOrderedSet()
+/]
+
+[query public getArcs(p: PetriNet) : OrderedSet(Arc) = 
+	p.petElements->select( e | e.oclIsTypeOf(Arc) )
+		->collect( e | e.oclAsType(Arc) )
+		->asOrderedSet()
+/]
+

@@ -1,0 +1,107 @@
+import 'SimplePDL.ecore'
+
+package simplepdl
+
+
+
+--le nom d’un processus ne doit être composé que de lettres, chiffres ou soulignés, un chiffre ne peut pas être première position
+
+context Process
+inv validName('Invalid name: ' + self.name):
+
+	self.name.matches('[A-Za-z_][A-Za-z0-9_]*')
+
+
+
+--  une opération "process()" est définie pour retourner le processus auquel un élément de processus est associé.
+
+context ProcessElement
+def: process(): Process =
+	Process.allInstances()
+		->select(p | p.processElements->includes(self))
+		->asSequence()->first()
+
+
+
+--  les activités liées par une WorkSequence sont dans le même processus.
+
+context WorkSequence
+inv successorAndPredecessorInSameProcess('Activities not in the same process : '
+		+ self.predecessor.name + ' in ' + self.predecessor.process().name+ ' and '
+		+ self.successor.name + ' in ' + self.successor.process().name
+):
+
+	self.process() = self.successor.process()
+	and self.process() = self.predecessor.process()
+
+
+
+-- Deux activités dans le même processus n'ont pas le même nom.
+
+context WorkDefinition
+inv uniqActivityName('Deux activités du même processus ne doivent pas avoir le même nom'): 
+                
+         self.Process.processElements ->select(pe | pe.oclIsKindOf(WorkDefinition))
+               ->collect(a | a.oclAsType(WorkDefinition))
+               ->forAll(a | self = a or self.name <> a.name)
+
+
+
+-- Une dépendance (WorkSequence) n'est pas réflexive, c'est-à-dire qu'une activité ne peut pas dépendre d'elle-même.
+
+context WorkSequence
+inv nonReflexive('Une dépendance ne doit pas être réflexive'):
+              
+                   self.predecessor <> self.successor
+
+
+
+-- Le nom d’une activité ne doit être composé que de lettres, chiffres ou soulignés, un chiffre ne peut pas être première position.
+-- Le nom d’une activité doit être composé d’au moins deux caractères.
+
+context WorkDefinition
+inv validNameLength('Invalid name: ' + self.name):
+
+	self.name.matches('[A-Za-z_][A-Za-z0-9_]+')
+
+
+
+--Le nom d’une ressource ne doit être composé que de lettres, chiffres ou soulignés, un chiffre ne peut pas être première position.        
+
+context Ressource
+inv validRessourceName('Invalid name: ' + self.name):
+
+	self.name.matches('[A-Za-z_][A-Za-z0-9_]*')
+
+
+
+--Deux ressources dans le même processus n'ont pas le même nom.
+
+context Ressource
+inv uniqRessourceName('Deux ressources du même processus ne doivent pas avoir le même nom'): 
+                
+         self.Process.processElements ->select(pe | pe.oclIsKindOf(Ressource))
+               ->collect(a | a.oclAsType(Ressource))
+               ->forAll(a | self = a or self.name <> a.name)
+
+
+
+--Le besoin en ressources est inférieur au total de ressources
+
+context NeedRessource
+inv NombreRessourceSuffisant('Le nombre de ressource demandées est insuffisant'):
+
+          self.need <= self.ressource.quantity 	
+
+
+
+--Le nombre de NeedRessource est positif
+
+context NeedRessource
+inv NeedPositif('Le nombre de ressource demandées doit être positif'):
+
+          self.need >= 0
+
+
+
+endpackage

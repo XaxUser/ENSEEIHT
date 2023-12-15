@@ -1,0 +1,85 @@
+import 'PetriNet.ecore'
+
+package petrinet
+
+
+
+--le nom d’un réseau de petri ne doit être composé que de lettres, chiffres ou soulignés, un chiffre ne peut pas être première position
+
+context PetriNet
+inv validName('Ianvalid name: ' + self.name):
+
+	self.name.matches('[A-Za-z_][A-Za-z0-9_]*')
+
+
+
+-- Deux places dans le même réseau de petri n'ont pas le même nom.
+
+context PetriNet
+inv uniqPlaceName('Deux places dans le même réseau de petri ne disposent pas du même nom'):
+
+         self.petElements ->select(pe | pe.oclIsKindOf(Place))
+               ->collect(a | a.oclAsType(Place))
+               ->forAll(a | self = a or self.name <> a.name)
+
+
+
+-- Deux transitions dans le même réseau de petri n'ont pas le même nom.
+
+context PetriNet
+
+inv uniqueTransitionNames('Deux transitions dans le même réseau de Pétri ne peuvent pas avoir le même nom'):
+    self.petElements->select(e | e.oclIsKindOf(Transition))
+        ->collect(t | t.oclAsType(Transition))
+        ->isUnique(name)
+
+
+
+
+-- Le nom d’une place ne doit être composé que de lettres, chiffres ou soulignés, un chiffre ne peut pas être première position.
+
+context Place
+inv validPlaceName('Invalid name: ' + self.name):
+
+	self.name.matches('[A-Za-z_][A-Za-z0-9_]*')
+
+
+
+--Le nom d’une transition ne doit être composé que de lettres, chiffres ou soulignés, un chiffre ne peut pas être première position.        
+
+context Transition
+inv validTransitionName('Invalid name: ' + self.name):
+
+	self.name.matches('[A-Za-z_][A-Za-z0-9_]*')
+
+
+
+
+--Le poids d'un arc est strictement positif.
+
+context Arc
+inv poidsPositifStrict('Le poids doit être strictement positif'):
+
+          self.poids > 0 	
+
+
+
+--Le nombre de jetons d'une place est positif.
+
+context Place
+inv jetonsPositif('Le nombre de jetons doit être positif'):
+
+          self.jetons >= 0
+
+
+
+--Un arc ne peut pas lier deux places ou deux transitions.
+
+context Arc
+inv liaisonCoherente('Arc doit lier une place à une transition'):
+
+          self.cible.oclIsTypeOf(Place) <> self.source.oclIsTypeOf(Place)
+
+
+
+endpackage
