@@ -1,4 +1,4 @@
-<div class="logo"><img src="logo.png" width="220px" align="right"></div>
+
 
 # ENSEEIHT				
 
