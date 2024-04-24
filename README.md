@@ -8,7 +8,7 @@
 - [Questions?](#questions)
 - [License](#license)
 
-## About
+## Abou
 
 <p>Student projects during my schooling at ENSEEIHT engineer school.</p>
 To download this repository on your own machine, open a terminal on **Linux** and type
