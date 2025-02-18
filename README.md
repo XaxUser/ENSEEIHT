@@ -14,7 +14,7 @@
 To download this repository on your own machine, open a terminal on **Linux** and type
 the command :
         
-        git clone https://github.com/MahmoudDkhissi/ENSEEIHT.git
+        git clone https://github.com/XaxUser/ENSEEIHT.git
 
 Then you can surf on the repository as you want.
 
